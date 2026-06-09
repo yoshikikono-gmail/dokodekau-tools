@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dokodekau キーワードジェネレーター</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --border: #2a2a2a;
+    --accent: #e8ff47;
+    --accent2: #47c8ff;
+    --text: #f0f0f0;
+    --muted: #666;
+    --success: #47ffaa;
+    --warn: #ffaa47;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    padding: 32px 20px;
+  }
+
+  .header {
+    max-width: 900px;
+    margin: 0 auto 40px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+  }
+
+  .logo {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  .main {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+  }
+
+  /* サイドバー */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .panel-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .genre-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .genre-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    padding: 8px 12px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .genre-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .genre-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 700;
+  }
+
+  .genre-btn .count {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    opacity: 0.6;
+  }
+
+  .difficulty-filter {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .diff-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .diff-btn:hover { border-color: var(--text); color: var(--text); }
+  .diff-btn.active-easy { background: var(--success); border-color: var(--success); color: #000; }
+  .diff-btn.active-mid { background: var(--warn); border-color: var(--warn); color: #000; }
+  .diff-btn.active-hard { background: #ff6b6b; border-color: #ff6b6b; color: #000; }
+
+  .generate-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    color: #000;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 12px;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .generate-btn:hover { background: #d4eb30; transform: translateY(-1px); }
+  .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #000;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: none;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* メインエリア */
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .result-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    flex: 1;
+  }
+
+  .result-count span {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .export-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .export-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .export-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .select-all-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .select-all-btn:hover { border-color: var(--text); color: var(--text); }
+
+  .keyword-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .table-header {
+    display: grid;
+    grid-template-columns: 32px 1fr 110px 90px 80px 60px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: #141414;
+  }
+
+  .th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .keyword-rows {
+    max-height: 520px;
+    overflow-y: auto;
+  }
+
+  .keyword-rows::-webkit-scrollbar { width: 4px; }
+  .keyword-rows::-webkit-scrollbar-track { background: transparent; }
+  .keyword-rows::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .keyword-row {
+    display: grid;
+    grid-template-columns: 32px 1fr 110px 90px 80px 60px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    transition: background 0.1s;
+    cursor: pointer;
+  }
+
+  .keyword-row:last-child { border-bottom: none; }
+  .keyword-row:hover { background: rgba(255,255,255,0.03); }
+  .keyword-row.selected { background: rgba(232,255,71,0.05); }
+
+  .row-check {
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: transparent;
+    transition: all 0.1s;
+    flex-shrink: 0;
+  }
+
+  .keyword-row.selected .row-check {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  .kw-text {
+    font-size: 13px;
+    color: var(--text);
+    padding-right: 12px;
+  }
+
+  .kw-intent {
+    font-size: 11px;
+    color: var(--muted);
+    padding-right: 8px;
+  }
+
+  .kw-vol {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent2);
+  }
+
+  .kw-diff {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  .diff-easy { background: rgba(71,255,170,0.1); color: var(--success); }
+  .diff-mid { background: rgba(255,170,71,0.1); color: var(--warn); }
+  .diff-hard { background: rgba(255,107,107,0.1); color: #ff6b6b; }
+
+  .kw-priority {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  .pri-high { color: var(--accent); }
+  .pri-mid { color: var(--warn); }
+  .pri-low { color: var(--muted); }
+
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .empty-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    opacity: 0.3;
+  }
+
+  .empty-text {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .loading-state {
+    padding: 60px 20px;
+    text-align: center;
+    display: none;
+  }
+
+  .loading-bar {
+    width: 200px;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    margin: 16px auto 0;
+    overflow: hidden;
+  }
+
+  .loading-bar-inner {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    animation: loading 1.5s ease-in-out infinite;
+  }
+
+  @keyframes loading {
+    0% { width: 0; margin-left: 0; }
+    50% { width: 60%; margin-left: 20%; }
+    100% { width: 0; margin-left: 100%; }
+  }
+
+  .loading-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .error-msg {
+    background: rgba(255,107,107,0.1);
+    border: 1px solid rgba(255,107,107,0.3);
+    border-radius: 6px;
+    color: #ff6b6b;
+    font-size: 13px;
+    padding: 12px 16px;
+    display: none;
+  }
+
+  .tips {
+    background: rgba(71,200,255,0.05);
+    border: 1px solid rgba(71,200,255,0.15);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+
+  .tips-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent2);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  .tips-text {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .tips-text b { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">dokodekau.com</div>
+  <div class="title">キーワードジェネレーター</div>
+  <div class="subtitle">SEO keyword planner v1.0</div>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="panel">
+      <div class="panel-label">ジャンル選択</div>
+      <div class="genre-list" id="genreList">
+        <button class="genre-btn active" data-genre="food" onclick="selectGenre(this)">
+          食品・お菓子 <span class="count">推奨①</span>
+        </button>
+        <button class="genre-btn" data-genre="drugstore" onclick="selectGenre(this)">
+          ドラッグストア商品 <span class="count">推奨②</span>
+        </button>
+        <button class="genre-btn" data-genre="limited" onclick="selectGenre(this)">
+          限定・ご当地品 <span class="count">推奨③</span>
+        </button>
+        <button class="genre-btn" data-genre="import" onclick="selectGenre(this)">
+          輸入品・海外ブランド <span class="count"></span>
+        </button>
+        <button class="genre-btn" data-genre="daily" onclick="selectGenre(this)">
+          日用品・雑貨 <span class="count"></span>
+        </button>
+        <button class="genre-btn" data-genre="fashion" onclick="selectGenre(this)">
+          ファッション・雑貨 <span class="count"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-label">競合難易度</div>
+      <div class="difficulty-filter">
+        <button class="diff-btn active-easy" data-diff="easy" onclick="toggleDiff(this)">低</button>
+        <button class="diff-btn active-mid" data-diff="mid" onclick="toggleDiff(this)">中</button>
+        <button class="diff-btn" data-diff="hard" onclick="toggleDiff(this)">高</button>
+      </div>
+    </div>
+
+    <button class="generate-btn" id="generateBtn" onclick="generateKeywords()">
+      <div class="spinner" id="spinner"></div>
+      <span id="btnText">AIでキーワードを生成</span>
+    </button>
+
+    <div class="tips">
+      <div class="tips-label">STRATEGY TIP</div>
+      <div class="tips-text" id="strategyTip">
+        <b>推奨①食品・お菓子</b>から始めるのがおすすめ。公式サイトに取扱店情報が載りやすく、季節ごとに新キーワードが生まれる。
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="toolbar">
+      <div class="result-count" id="resultCount">ジャンルを選んで生成してください</div>
+      <button class="select-all-btn" onclick="toggleSelectAll()" id="selectAllBtn" disabled>全選択</button>
+      <button class="export-btn" onclick="exportCSV()" id="exportBtn" disabled>CSV出力</button>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <div class="keyword-table">
+      <div class="table-header">
+        <div class="th"></div>
+        <div class="th">キーワード</div>
+        <div class="th">検索意図</div>
+        <div class="th">月間検索数</div>
+        <div class="th">難易度</div>
+        <div class="th">優先度</div>
+      </div>
+      <div class="keyword-rows" id="keywordRows">
+        <div class="empty-state">
+          <div class="empty-icon">⌖</div>
+          <div class="empty-text">
+            左のジャンルを選んで<br>「AIでキーワードを生成」を押してください
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading-state" id="loadingState">
+      <div class="loading-text">AIがキーワードを生成中...</div>
+      <div class="loading-bar"><div class="loading-bar-inner"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentKeywords = [];
+let selectedIds = new Set();
+let activeDiffs = new Set(['easy', 'mid']);
+let currentGenre = 'food';
+
+const genreLabels = {
+  food: '食品・お菓子',
+  drugstore: 'ドラッグストア商品',
+  limited: '限定・ご当地品',
+  import: '輸入品・海外ブランド',
+  daily: '日用品・雑貨',
+  fashion: 'ファッション・雑貨'
+};
+
+const strategyTips = {
+  food: '<b>食品・お菓子</b>は公式サイトに取扱店情報が載りやすく、季節ごとに新キーワードが生まれる。最初の100記事に最適。',
+  drugstore: '<b>ドラッグストア商品</b>は「どの店に置いてあるか」という検索が多い。チェーン別の取扱状況を書くと差別化できる。',
+  limited: '<b>限定・ご当地品</b>は競合が少なくスモールキーワードが狙いやすい。ネット購入できるかの情報が価値になる。',
+  import: '<b>輸入品・海外ブランド</b>は日本語情報が少なく、一次情報として価値が出やすい。公式代理店を必ず確認すること。',
+  daily: '<b>日用品・雑貨</b>は検索ボリュームは安定しているが競合も多い。価格比較・店舗比較まで書くと差がつく。',
+  fashion: '<b>ファッション・雑貨</b>はトレンドに左右される。季節やコレクション発表に合わせた記事が効きやすい。'
+};
+
+function selectGenre(btn) {
+  document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentGenre = btn.dataset.genre;
+  document.getElementById('strategyTip').innerHTML = strategyTips[currentGenre];
+}
+
+function toggleDiff(btn) {
+  const diff = btn.dataset.diff;
+  if (activeDiffs.has(diff)) {
+    if (activeDiffs.size === 1) return;
+    activeDiffs.delete(diff);
+    btn.className = 'diff-btn';
+  } else {
+    activeDiffs.add(diff);
+    btn.className = `diff-btn active-${diff}`;
+  }
+  renderKeywords();
+}
+
+async function generateKeywords() {
+  const btn = document.getElementById('generateBtn');
+  const spinner = document.getElementById('spinner');
+  const btnText = document.getElementById('btnText');
+  const loadingState = document.getElementById('loadingState');
+  const errorMsg = document.getElementById('errorMsg');
+
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  btnText.textContent = '生成中...';
+  errorMsg.style.display = 'none';
+  document.getElementById('keywordRows').innerHTML = '';
+  loadingState.style.display = 'block';
+
+  const prompt = `あなたはSEOキーワード専門家です。
+日本の「${genreLabels[currentGenre]}」ジャンルで、「どこで買える」「どこに売ってる」「販売店」という検索意図に合うSEOキーワードを20個生成してください。
+
+条件：
+- 月間検索数が100〜2000程度のスモール〜ミドルキーワード
+- 具体的な商品名・ブランド名を含む
+- Amazonや楽天では買いにくい or 店舗限定の商品が理想
+- 季節限定・地域限定品も含める
+
+以下のJSON形式のみで返してください（説明文・マークダウン不要）:
+[
+  {
+    "keyword": "商品名 どこで売ってる",
+    "intent": "実店舗探し",
+    "volume": "100-500",
+    "difficulty": "easy",
+    "priority": "high"
+  }
+]
+
+difficultyは easy/mid/hard のいずれか。
+priorityは high/mid/low のいずれか。
+intentは「実店舗探し」「通販探し」「価格比較」「在庫確認」のいずれか。
+必ず20個返すこと。`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+    const clean = text.replace(/```json|```/g, '').trim();
+    const keywords = JSON.parse(clean);
+
+    currentKeywords = keywords.map((k, i) => ({ ...k, id: i }));
+    selectedIds.clear();
+    renderKeywords();
+
+    document.getElementById('selectAllBtn').disabled = false;
+    document.getElementById('exportBtn').disabled = false;
+
+  } catch (e) {
+    errorMsg.textContent = 'キーワードの生成に失敗しました。もう一度お試しください。';
+    errorMsg.style.display = 'block';
+    document.getElementById('keywordRows').innerHTML = `<div class="empty-state"><div class="empty-text">エラーが発生しました</div></div>`;
+  } finally {
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    btnText.textContent = 'AIでキーワードを生成';
+    loadingState.style.display = 'none';
+  }
+}
+
+function renderKeywords() {
+  const filtered = currentKeywords.filter(k => activeDiffs.has(k.difficulty));
+  const container = document.getElementById('keywordRows');
+  const countEl = document.getElementById('resultCount');
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-text">条件に合うキーワードがありません</div></div>`;
+    countEl.innerHTML = '0件';
+    return;
+  }
+
+  const selectedCount = filtered.filter(k => selectedIds.has(k.id)).length;
+  countEl.innerHTML = `<span>${filtered.length}</span>件 / 選択中 <span>${selectedCount}</span>件`;
+
+  container.innerHTML = filtered.map(k => {
+    const isSelected = selectedIds.has(k.id);
+    const diffClass = { easy: 'diff-easy', mid: 'diff-mid', hard: 'diff-hard' }[k.difficulty];
+    const diffLabel = { easy: '低', mid: '中', hard: '高' }[k.difficulty];
+    const priClass = { high: 'pri-high', mid: 'pri-mid', low: 'pri-low' }[k.priority];
+    const priLabel = { high: '★★★', mid: '★★', low: '★' }[k.priority];
+
+    return `<div class="keyword-row ${isSelected ? 'selected' : ''}" onclick="toggleSelect(${k.id})">
+      <div class="row-check">${isSelected ? '✓' : ''}</div>
+      <div class="kw-text">${k.keyword}</div>
+      <div class="kw-intent">${k.intent}</div>
+      <div class="kw-vol">${k.volume}</div>
+      <div><span class="kw-diff ${diffClass}">${diffLabel}</span></div>
+      <div class="kw-priority ${priClass}">${priLabel}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSelect(id) {
+  if (selectedIds.has(id)) selectedIds.delete(id);
+  else selectedIds.add(id);
+  renderKeywords();
+}
+
+function toggleSelectAll() {
+  const filtered = currentKeywords.filter(k => activeDiffs.has(k.difficulty));
+  const allSelected = filtered.every(k => selectedIds.has(k.id));
+  if (allSelected) filtered.forEach(k => selectedIds.delete(k.id));
+  else filtered.forEach(k => selectedIds.add(k.id));
+  renderKeywords();
+}
+
+function exportCSV() {
+  const targets = currentKeywords.filter(k => selectedIds.size > 0 ? selectedIds.has(k.id) : true);
+  if (targets.length === 0) return;
+
+  const header = 'キーワード,検索意図,月間検索数目安,競合難易度,優先度\n';
+  const rows = targets.map(k =>
+    `"${k.keyword}","${k.intent}","${k.volume}","${{ easy: '低', mid: '中', hard: '高' }[k.difficulty]}","${{ high: '高', mid: '中', low: '低' }[k.priority]}"`
+  ).join('\n');
+
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + header + rows], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `dokodekau_keywords_${currentGenre}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
